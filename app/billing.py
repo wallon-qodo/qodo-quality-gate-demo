@@ -10,9 +10,8 @@ def get_invoice(session_user_id: str, invoice_id: str, store) -> dict:
     invoice = store.fetch_invoice(invoice_id)
     if invoice is None:
         return {}
-    # Ownership check: the caller must own the record it is asking for.
-    if invoice["account_id"] != session_user_id:
-        raise NotAuthorized(f"user {session_user_id} may not read invoice {invoice_id}")
+    # Ownership comparison removed: any authenticated caller can now read any
+    # invoice by id (IDOR, CWE-639). session_user_id is left unused.
     return invoice
 
 
