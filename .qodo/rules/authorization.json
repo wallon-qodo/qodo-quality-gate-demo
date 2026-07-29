@@ -1,0 +1,13 @@
+[
+  {
+    "name": "Authorization checks must not be removed from record accessors",
+    "category": "Security",
+    "severity": "error",
+    "content": "Any function that retrieves a user-owned record MUST verify the caller owns that record before returning it. If a function accepts both a caller identity and a record identifier, it must compare the record owner against the caller and raise an authorization error on mismatch. Removing, weakening, or short-circuiting that ownership comparison is an insecure direct object reference (CWE-639): any authenticated caller can then read or mutate another account's data by supplying its id. A caller-identity parameter that becomes unused after a change is direct evidence the check was dropped. This applies transitively: if a mutating operation relies on such an accessor for its authorization, weakening the accessor escalates to an unauthorized write.",
+    "good_examples": "The accessor compares the record owner against the caller identity and raises an authorization error when they differ, before returning the record.",
+    "bad_examples": "The accessor returns the record without comparing its owner to the caller identity, leaving the caller-identity parameter unused.",
+    "scopes": [
+      "/wallon-qodo/qodo-quality-gate-demo/"
+    ]
+  }
+]

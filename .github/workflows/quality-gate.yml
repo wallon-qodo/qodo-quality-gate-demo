@@ -7,14 +7,15 @@ on:
 jobs:
   deterministic:
     # This job name is what you add to branch protection's required-checks list.
+    # Powered by Opengrep (LGPL-2.1) -- see NOTICE.
     # Renaming it silently breaks the gate -- the required check goes permanently
     # pending and nothing merges.
-    name: Deterministic Quality Gate (Opengrep)
+    name: Qodo Quality Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Opengrep
+      - name: Install analysis engine
         run: |
           gh release download v1.26.0 --repo opengrep/opengrep \
             --pattern 'opengrep_manylinux_x86' --output /usr/local/bin/opengrep
@@ -27,14 +28,14 @@ jobs:
       # One invocation for the whole ruleset: batching is ~2.3x faster than
       # scanning per-rule.
       - name: Scan
-        run: opengrep scan --config .qodo/opengrep/ --error --quiet .
+        run: opengrep scan --config .qodo/quality-gate/ --error --quiet .
 
       # Opengrep can silently drop matches in regions it fails to parse, while
       # still exiting 0. Fail loudly instead of reporting false confidence.
       - name: Parse-integrity check
         if: always()
         run: |
-          opengrep scan --config .qodo/opengrep/ --json --quiet . > findings.json || true
+          opengrep scan --config .qodo/quality-gate/ --json --quiet . > findings.json || true
           python3 - <<'EOF'
           import json, sys
           d = json.load(open("findings.json"))

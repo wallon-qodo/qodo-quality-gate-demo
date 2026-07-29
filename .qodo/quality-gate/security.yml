@@ -1,4 +1,6 @@
-# Deterministic quality gate -- runs BESIDE Qodo code review, not inside it.
+# Qodo Quality Gate -- deterministic rules, run BESIDE Qodo Code Review.
+#
+# Engine: Opengrep (LGPL-2.1), invoked as an unmodified external binary. See NOTICE.
 #
 # These rules cover the syntactic floor: banned APIs, dangerous literals, unsafe
 # shapes. Anything requiring judgment (authorization correctness, business logic,

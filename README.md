@@ -1,74 +1,69 @@
-# Qodo + Opengrep Quality Gate Demo
+# Qodo Quality Gate + Qodo Code Review
 
-Two independent gates on one PR. Both must pass before a merge is possible.
+Two Qodo surfaces on one PR. Both must pass before a merge is possible.
 
-| Gate | Mechanism | Catches | Determinism |
+| Surface | Mechanism | Catches | Determinism |
 |---|---|---|---|
-| **Opengrep** | CI required **status check** | syntactic floor: banned APIs, dangerous literals, unsafe shapes | same commit -> identical findings, every run |
-| **Qodo** | **REQUEST_CHANGES review** vote | judgment: authorization, business logic, exploitability | LLM reasoning, non-reproducible by design |
+| **Qodo Quality Gate** | CI required **status check** | syntactic floor: banned APIs, dangerous literals, unsafe shapes | same commit -> identical findings, every run |
+| **Qodo Code Review** | **REQUEST_CHANGES review** vote | judgment: authorization, business logic, exploitability | LLM reasoning, non-reproducible by design |
 
 Branch protection ANDs them. They are different provider primitives -- a status
 check and a review vote -- so they compose without interfering.
 
+> The Quality Gate's analysis engine is **Opengrep** (LGPL-2.1), invoked as an
+> unmodified external binary. "Qodo Quality Gate" names the policy layer: the rule
+> set, severity mapping, CI wiring, and merge decision. See [NOTICE](NOTICE).
+
 ## The point of this demo
 
-The two gates are **complementary, not redundant**. Verified live on this repo:
+The two surfaces are **complementary, not redundant**. Three PRs:
 
-| PR | Defect | Opengrep | Qodo | Merge | Blocked by |
+| PR | Defect | Quality Gate | Code Review | Merge | Blocked by |
 |---|---|---|---|---|---|
-| [#1](../../pull/1) | `hashlib.md5()` for password storage | **FAILURE** | APPROVED | **BLOCKED** | the status check |
-| [#4](../../pull/4) | ownership check removed from `get_invoice` | **SUCCESS** | **CHANGES_REQUESTED** | **BLOCKED** | the review vote |
-| [#3](../../pull/3) | harmless refactor | SUCCESS | APPROVED | **CLEAN** | — mergeable — |
+| 1 | `hashlib.md5()` for password storage | **FAIL** | approves | **BLOCKED** | the status check |
+| 2 | ownership check removed from `get_invoice` | **PASS** | **CHANGES_REQUESTED** | **BLOCKED** | the review vote |
+| 3 | harmless refactor | PASS | APPROVED | **CLEAN** | -- mergeable -- |
 
-Each PR is blocked by a *different* gate, and the clean one passes both. That is
-the whole architecture in three rows.
+Each PR is blocked by a *different* surface, and the clean one passes both.
 
-**#4 is the one that matters.** Opengrep passes it with zero findings and is
-*correct* to: there is no banned API and no dangerous literal, only an absent
+**PR 2 is the one that matters.** The Quality Gate passes it with zero findings and
+is *correct* to: there is no banned API and no dangerous literal, only an absent
 authorization check. A pattern matcher cannot express "this function was supposed
-to verify ownership." Qodo caught it — and caught more than was planted:
+to verify ownership." Code Review catches it.
 
-> **Invoice ownership bypass** `Bug` `Security` — *Action required*
-> "Removing the account comparison makes `get_invoice` return another account's
-> invoice to any caller who supplies its ID. Because `refund` relies on this
-> lookup before calling `write_refund`, the same bypass also permits
-> cross-account refunds."
+**PR 1 is the inverse.** The Quality Gate decides it mechanically and identically
+on every run -- the property an auditor wants as evidence. Code Review may well
+*approve* PR 1, because a hard block from Code Review requires a platform rule with
+a stable integer id, and there is none for weak hashing scoped here. The
+deterministic gate carries that case alone. That asymmetry is the argument for
+running both.
 
-**#1 is the inverse.** Opengrep decides it mechanically and identically on every
-run — the property an auditor wants as evidence. Note Qodo *approved* #1: there
-is no platform rule for weak hashing scoped to this repo, so `rule_compliance`
-found no match and fell through to `default: approve`. The deterministic gate
-carries that case alone, with no platform rule required. That asymmetry is the
-argument for running both.
+## How each surface actually blocks
 
-## How each gate actually blocks
-
-Two different provider primitives, which is why they compose:
-
-| Gate | Primitive | Wired via |
+| Surface | Primitive | Wired via |
 |---|---|---|
-| Opengrep | required **status check** | `--error` → non-zero exit → check fails → branch protection |
-| Qodo | **REQUEST_CHANGES review** | `merge_automation` → `rule_compliance` matches a platform rule id → review vote → branch protection |
+| Quality Gate | required **status check** | `--error` -> non-zero exit -> check fails -> branch protection |
+| Code Review | **REQUEST_CHANGES review** | `merge_automation` -> `rule_compliance` matches a platform rule id -> review vote -> branch protection |
 
-Qodo's half needs a **platform rule with a stable int id**. LLM-derived findings
-arrive with no rule id and are not matchable by `rule_compliance` — they post as
-advisory comments and do not block. This repo is gated by rule **2397096**
-("Authorization checks must not be removed from record accessors"), scoped to
-`/wallon-qodo/qodo-opengrep-gate-demo/` so it fires only here.
+Code Review's half needs a **platform rule with a stable int id**. LLM-derived
+findings arrive with no rule id, are not matchable by `rule_compliance`, and post
+as advisory comments that do **not** block. This is the single most important
+constraint to understand before promising that Code Review blocks on severity.
 
 ## Layout
 
 ```
-.github/workflows/quality-gate.yml   Opengrep CI job (--error -> non-zero exit -> check fails)
-.qodo/opengrep/security.yml          7 deterministic rules
-.pr_agent.toml                       Qodo review config
+.github/workflows/quality-gate.yml   status check (--error -> non-zero exit)
+.qodo/quality-gate/security.yml      7 deterministic rules
+.pr_agent.toml                       Code Review config
+NOTICE                               third-party attribution (Opengrep, LGPL-2.1)
 app/                                 clean baseline
 ```
 
 ## Rules
 
-7 rules, ported from a set measured against 288 real production files
-(0 false positives) before landing here.
+7 rules, measured against 288 real production files (0 false positives) before
+landing here.
 
 | Rule | CWE | Frameworks satisfied |
 |---|---|---|
@@ -80,9 +75,8 @@ app/                                 clean baseline
 | SEC-TLS-01 TLS verification disabled | CWE-295 | FIPS-HR-04, PCI-DSS 4.2.1 |
 | SEC-RANDOM-01 weak PRNG | CWE-338, CWE-330 | FIPS-HR-02 |
 
-Each rule carries `metadata.qodo_rule_id`. Architecture A (this demo) does not
-read it -- it is there so the same ruleset can later feed Qodo's findings model
-directly instead of running as a separate status check.
+Each rule carries `metadata.qodo_rule_id` so the same rule set can later feed
+Qodo's findings model directly instead of running as a separate status check.
 
 ## Setup
 

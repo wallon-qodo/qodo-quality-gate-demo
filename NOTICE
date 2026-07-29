@@ -1,0 +1,16 @@
+Qodo Quality Gate — third-party notices
+=======================================
+
+The deterministic analysis in this demo is performed by Opengrep, an open-source
+static analysis engine licensed under the GNU Lesser General Public License,
+version 2.1 (LGPL-2.1).
+
+    Opengrep — https://github.com/opengrep/opengrep
+    Licence  — LGPL-2.1
+
+Opengrep is invoked as an unmodified external binary (a separate process). It is
+not linked into, bundled with, or modified by anything in this repository.
+
+"Qodo Quality Gate" names the policy and orchestration layer — the rule set,
+severity mapping, CI wiring, and merge-blocking decision. It does not name the
+analysis engine, and no claim is made to the Opengrep name or trademarks.
