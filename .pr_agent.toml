@@ -1,0 +1,19 @@
+# Qodo code review -- the judgment half of the gate.
+#
+# NOTE: `merge_automation` is a PLATFORM-managed config section. It is set via
+# the authenticated config API (PATCH /config/v1/repo-settings), NOT here.
+# Nothing in this file blocks a merge on its own.
+
+[config]
+model = "claude-4-sonnet"
+
+[pr_reviewer]
+require_security_review = true
+require_tests_review = true
+
+[pr_agent]
+# Re-review on every push, not just PR open, so a fix clears the review.
+automatic_code_review = "per_commit"
+
+[github_app]
+push_commands = ["/agentic_review"]

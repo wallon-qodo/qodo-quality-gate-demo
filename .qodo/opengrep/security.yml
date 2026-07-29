@@ -1,0 +1,207 @@
+# Deterministic quality gate -- runs BESIDE Qodo code review, not inside it.
+#
+# These rules cover the syntactic floor: banned APIs, dangerous literals, unsafe
+# shapes. Anything requiring judgment (authorization correctness, business logic,
+# exploitability) is deliberately NOT here -- that is Qodo's half of the gate.
+#
+# Ported from the validated set in ~/opengrep-triage. Every rule was measured
+# against real production code before landing here.
+rules:
+  - id: "SEC-CRYPTO-01"
+    message: "SEC-CRYPTO-01 (CWE-327, CWE-1240): weak or broken hash used for password storage"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8503
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-327"
+        - "CWE-1240"
+      owasp:
+        - "A02:2021"
+      frameworks:
+        - "FIPS-HR-01"
+        - "PCI-DSS-6.2.4"
+        - "NIST-SC-13"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "hashlib.md5(...)"
+          - pattern: "hashlib.sha1(...)"
+          - pattern: "hashlib.new(\"md5\", ...)"
+          - pattern: "hashlib.new(\"sha1\", ...)"
+  - id: "SEC-SECRET-01"
+    message: "SEC-SECRET-01 (CWE-798, CWE-259): hard-coded credential or secret literal"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8501
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-798"
+        - "CWE-259"
+      owasp:
+        - "A07:2021"
+      frameworks:
+        - "FIPS-HR-06"
+        - "PCI-DSS-6.2.4"
+        - "HIPAA-HR-04"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-regex: "(?i)\\b[A-Z_]*(SECRET|TOKEN|CREDENTIAL)[A-Z_]*\\s*=\\s*[\"\\'][^\"\\']{12,}[\"\\']"
+  - id: "SEC-SQLI-01"
+    message: "SEC-SQLI-01 (CWE-89): SQL built by string concatenation"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8506
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-89"
+      owasp:
+        - "A03:2021"
+      frameworks:
+        - "PCI-DSS-6.2.4"
+        - "OWASP-HR-03"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "$CUR.execute(\"...\" + ...)"
+          - pattern: "$CUR.execute(f\"...\")"
+          - pattern: "$CUR.execute(\"...\" % ...)"
+          - pattern: "$CUR.execute(\"...\".format(...))"
+  - id: "SEC-DESER-01"
+    message: "SEC-DESER-01 (CWE-502): unsafe deserialization of untrusted data"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8502
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-502"
+      owasp:
+        - "A08:2021"
+      frameworks:
+        - "OWASP-HR-06"
+        - "STIG-HR-06"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "pickle.loads(...)"
+          - pattern: "yaml.load($X)"
+          - pattern: "marshal.loads(...)"
+  - id: "SEC-CMDI-01"
+    message: "SEC-CMDI-01 (CWE-78): OS command built from a non-literal"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8507
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-78"
+      owasp:
+        - "A03:2021"
+      frameworks:
+        - "OWASP-HR-03"
+        - "STIG-HR-06"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "os.system(...)"
+          - pattern: "subprocess.$F(..., shell=True, ...)"
+  - id: "SEC-TLS-01"
+    message: "SEC-TLS-01 (CWE-295): TLS certificate verification disabled"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8504
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "action_required"
+      cwe:
+        - "CWE-295"
+      owasp:
+        - "A02:2021"
+        - "A05:2021"
+      frameworks:
+        - "FIPS-HR-04"
+        - "PCI-DSS-4.2.1"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "requests.$M(..., verify=False, ...)"
+          - pattern: "ssl._create_unverified_context(...)"
+  - id: "SEC-RANDOM-01"
+    message: "SEC-RANDOM-01 (CWE-338, CWE-330): non-cryptographic PRNG in a security context"
+    severity: "WARNING"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_rule_id: 8505
+      qodo_finding_source: "StaticAnalysisFinding"
+      qodo_action_level: "remediation_recommended"
+      cwe:
+        - "CWE-338"
+        - "CWE-330"
+      owasp:
+        - "A02:2021"
+      frameworks:
+        - "FIPS-HR-02"
+      confidence: "HIGH"
+      version: "1.0.0"
+    patterns:
+      - pattern-either:
+          - pattern: "random.random(...)"
+          - pattern: "random.randint(...)"
+          - pattern: "random.choice(...)"
