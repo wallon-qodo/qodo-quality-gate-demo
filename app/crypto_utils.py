@@ -9,9 +9,9 @@ def hash_password(password: str, salt: bytes | None = None) -> tuple[bytes, byte
     """Derive a password hash using PBKDF2-HMAC-SHA256."""
     if salt is None:
         salt = os.urandom(16)
-    # PLANTED DEFECT: swapped PBKDF2-SHA256 for a bare MD5 digest.
-    # Qodo Quality Gate rule SEC-CRYPTO-01 matches hashlib.md5(...) mechanically.
-    digest = hashlib.md5(password.encode() + salt).hexdigest().encode()
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode(), salt, _ITERATIONS, dklen=32
+    )
     return digest, salt
 
 
