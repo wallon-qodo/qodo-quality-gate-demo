@@ -12,23 +12,49 @@ check and a review vote -- so they compose without interfering.
 
 ## The point of this demo
 
-The two gates are **complementary, not redundant**. Three PRs prove it:
+The two gates are **complementary, not redundant**. Verified live on this repo:
 
-| PR | Defect | Opengrep | Qodo | Merge |
-|---|---|---|---|---|
-| 1 | `hashlib.md5()` for password storage | **FAIL** | flags it too | **BLOCKED** |
-| 2 | ownership check removed from `get_invoice` | **PASS** (cannot express it) | **REQUEST_CHANGES** | **BLOCKED** |
-| 3 | harmless refactor | PASS | APPROVE | **MERGEABLE** |
+| PR | Defect | Opengrep | Qodo | Merge | Blocked by |
+|---|---|---|---|---|---|
+| [#1](../../pull/1) | `hashlib.md5()` for password storage | **FAILURE** | APPROVED | **BLOCKED** | the status check |
+| [#4](../../pull/4) | ownership check removed from `get_invoice` | **SUCCESS** | **CHANGES_REQUESTED** | **BLOCKED** | the review vote |
+| [#3](../../pull/3) | harmless refactor | SUCCESS | APPROVED | **CLEAN** | — mergeable — |
 
-PR 2 is the one that matters. A pattern matcher has no way to know that
-`get_invoice` is supposed to enforce record ownership -- there is no banned API
-and no dangerous literal, just a missing check. Opengrep is silent and correct
-to be silent. Qodo catches it.
+Each PR is blocked by a *different* gate, and the clean one passes both. That is
+the whole architecture in three rows.
 
-PR 1 is the inverse: Opengrep decides it mechanically and identically on every
-run, which is what an auditor wants as evidence.
+**#4 is the one that matters.** Opengrep passes it with zero findings and is
+*correct* to: there is no banned API and no dangerous literal, only an absent
+authorization check. A pattern matcher cannot express "this function was supposed
+to verify ownership." Qodo caught it — and caught more than was planted:
 
-Neither gate replaces the other. That is the whole architecture.
+> **Invoice ownership bypass** `Bug` `Security` — *Action required*
+> "Removing the account comparison makes `get_invoice` return another account's
+> invoice to any caller who supplies its ID. Because `refund` relies on this
+> lookup before calling `write_refund`, the same bypass also permits
+> cross-account refunds."
+
+**#1 is the inverse.** Opengrep decides it mechanically and identically on every
+run — the property an auditor wants as evidence. Note Qodo *approved* #1: there
+is no platform rule for weak hashing scoped to this repo, so `rule_compliance`
+found no match and fell through to `default: approve`. The deterministic gate
+carries that case alone, with no platform rule required. That asymmetry is the
+argument for running both.
+
+## How each gate actually blocks
+
+Two different provider primitives, which is why they compose:
+
+| Gate | Primitive | Wired via |
+|---|---|---|
+| Opengrep | required **status check** | `--error` → non-zero exit → check fails → branch protection |
+| Qodo | **REQUEST_CHANGES review** | `merge_automation` → `rule_compliance` matches a platform rule id → review vote → branch protection |
+
+Qodo's half needs a **platform rule with a stable int id**. LLM-derived findings
+arrive with no rule id and are not matchable by `rule_compliance` — they post as
+advisory comments and do not block. This repo is gated by rule **2397096**
+("Authorization checks must not be removed from record accessors"), scoped to
+`/wallon-qodo/qodo-opengrep-gate-demo/` so it fires only here.
 
 ## Layout
 

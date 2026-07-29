@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 findings.json
 .venv/
+.out/
