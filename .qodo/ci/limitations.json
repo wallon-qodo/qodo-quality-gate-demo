@@ -1,0 +1,9 @@
+{
+  "SEC-CRYPTO-01": "Matches hashlib.md5/sha1 and hashlib.new with a literal algorithm name. Misses an algorithm supplied via a variable, config value, or reflection, and cannot distinguish a security use from a benign cache-key or ETag use.",
+  "SEC-SECRET-01": "Matches an uppercase SECRET/TOKEN/CREDENTIAL identifier assigned a literal of 12+ chars. Misses lowercase or unconventional names, values built by concatenation, credentials in non-Python config files, and short high-value literals below the length floor.",
+  "SEC-SQLI-01": "Matches concatenation, f-string, percent-format and .format() directly inside an execute() call. Misses a query assembled into a variable on a prior line, built by a helper function, or passed through an ORM raw-SQL wrapper.",
+  "SEC-DESER-01": "Matches pickle.loads, yaml.load with a single argument, and marshal.loads. Misses aliased imports, yaml.load called with an explicit unsafe Loader keyword, and other deserialisers such as dill, shelve or jsonpickle.",
+  "SEC-CMDI-01": "Matches os.system and subprocess with shell=True. Misses os.popen, the os.exec family, commands routed through a wrapper utility, and shell=True supplied via kwargs expansion.",
+  "SEC-TLS-01": "Matches requests with a literal verify=False and the private ssl unverified-context helper. Misses the flag passed as a variable, a session-level assignment, and urllib3 or httpx equivalents.",
+  "SEC-RANDOM-01": "Flags random.random/randint/choice unconditionally, so it fires on legitimate non-security uses such as retry jitter or sampling. Does not resolve whether the value reaches a security sink; triage accordingly."
+}

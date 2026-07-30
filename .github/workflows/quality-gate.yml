@@ -15,6 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Contract gate: a malformed rule must fail the build, not silently
+      # under-match. pyyaml is last-wins on duplicate keys, so a rule can look fine
+      # in Python and be rejected outright by the engine -- E9 catches that.
+      - name: Validate rule contract
+        run: |
+          python3 -m pip install --quiet jsonschema pyyaml
+          python3 .qodo/ci/validate_rules.py .qodo/quality-gate/
+
       - name: Install analysis engine
         run: |
           gh release download v1.26.0 --repo opengrep/opengrep \

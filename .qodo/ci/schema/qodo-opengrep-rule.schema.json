@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qodo.ai/schemas/qodo-opengrep-rule/v1",
+  "title": "Qodo Quality Gate rule metadata, v1 (FROZEN)",
+  "description": "Metadata contract for an Opengrep rule whose findings are ingested into Qodo's findings model. The load-bearing invariant: every id in qodo_rule_ids is a REAL platform ruleId returned by POST /rules/v1/rule. There is no local id space. Locally-invented ints cannot be cited -- findings_rule_engine matches evidence.citations[].id against platform rule ids, so an invented int silently fails to gate, or worse, collides with an unrelated real rule. A rule must carry at least one of patterns / pattern / pattern-either / pattern-regex, or mode: taint -- enforced via anyOf.",
+  "type": "object",
+  "required": [
+    "id",
+    "message",
+    "severity",
+    "languages",
+    "metadata"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(qodo\\.gate\\.[a-z0-9]+(-[a-z0-9]+)*|[A-Z][A-Z0-9]*(-[A-Z0-9]+)+)$",
+      "description": "Either qodo.gate.kebab-case or SCREAMING-KEBAB (e.g. SEC-CRYPTO-01)."
+    },
+    "message": {
+      "type": "string",
+      "minLength": 20
+    },
+    "severity": {
+      "enum": [
+        "ERROR",
+        "WARNING",
+        "INFO"
+      ]
+    },
+    "languages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "qodo_schema_version",
+        "qodo_integration_mode",
+        "qodo_action_level",
+        "version",
+        "portability_tier",
+        "confidence",
+        "limitations"
+      ],
+      "properties": {
+        "qodo_schema_version": {
+          "const": 1
+        },
+        "qodo_finding_source": {
+          "const": "StaticAnalysisFinding"
+        },
+        "qodo_action_level": {
+          "enum": [
+            "action_required",
+            "remediation_recommended",
+            "informational"
+          ],
+          "description": "Maps from opengrep severity: ERROR->action_required, WARNING->remediation_recommended, INFO->informational"
+        },
+        "qodo_primary_rule_id": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "The rule this matcher is chiefly enforcing. MUST be a member of qodo_rule_ids and MUST be unique across the whole rule set."
+        },
+        "qodo_rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1000
+          },
+          "description": "Every platform rule this one matcher satisfies -- the compliance multiplier. All ids must resolve via GET /rules/v1/rule/{id}. NOT a local numbering scheme."
+        },
+        "qodo_rule_ids_excluded": {
+          "type": "array",
+          "description": "Cluster members deliberately NOT cited, each with a reason, so the citation count is defensible under audit.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "type": [
+                  "integer",
+                  "string"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 20
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "semver. patch=FP fix, minor=new variant caught, major=citation set changed (re-enters L3)."
+        },
+        "portability_tier": {
+          "enum": [
+            "A",
+            "B",
+            "AB"
+          ],
+          "description": "A = AST patterns only. B = taint only. AB = both (common for rules that pattern-match a dangerous shape AND taint-track an untrusted source). Put engine caveats in tier_notes, not here -- this field must stay queryable so 'how many taint rules do we have' is answerable."
+        },
+        "confidence": {
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        },
+        "limitations": {
+          "type": "string",
+          "minLength": 30,
+          "description": "REQUIRED and non-trivial. What this matcher cannot catch. A rule with no known bypasses has not been adversarially reviewed -- state that instead of leaving it empty."
+        },
+        "cwe": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CWE-\\d+(: .+)?$"
+          }
+        },
+        "owasp": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "frameworks": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "description": "Either a flat array of framework identifiers, or a mapping framework -> controls (controls may itself be a mapping keyed by standard version, e.g. PCI-DSS -> v4_0 -> [...]). Both accepted: the nested form carries version context and must not be flattened away."
+        },
+        "cluster": {
+          "type": "string"
+        },
+        "validated": {
+          "type": "object",
+          "description": "Graduation evidence. A rule below L3 must not ship.",
+          "properties": {
+            "level": {
+              "enum": [
+                "L0",
+                "L1",
+                "L2",
+                "L3",
+                "L4"
+              ]
+            },
+            "curated_tp": {
+              "type": "string"
+            },
+            "curated_fp": {
+              "type": "string"
+            },
+            "real_corpus_files": {
+              "type": "integer"
+            },
+            "real_corpus_fp": {
+              "type": "integer"
+            }
+          }
+        },
+        "tier_notes": {
+          "type": "string",
+          "description": "Free text: which engine features the tier relies on, versions verified against."
+        },
+        "qodo_integration_mode": {
+          "enum": [
+            "status_check",
+            "findings_adapter"
+          ],
+          "description": "status_check  -- Architecture A: opengrep exit code fails a required CI check. Citations are optional; nothing reads them. findings_adapter -- Architecture B: results are converted to Qodo Finding objects and gate via merge_automation, so qodo_rule_ids MUST hold real platform ruleIds."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "qodo_integration_mode": {
+                "const": "findings_adapter"
+              }
+            },
+            "required": [
+              "qodo_integration_mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "qodo_finding_source",
+              "qodo_primary_rule_id",
+              "qodo_rule_ids"
+            ],
+            "description": "B-mode only: a finding cannot gate without real platform ruleIds."
+          }
+        }
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "patterns"
+      ]
+    },
+    {
+      "required": [
+        "pattern"
+      ]
+    },
+    {
+      "required": [
+        "pattern-either"
+      ]
+    },
+    {
+      "required": [
+        "pattern-regex"
+      ]
+    },
+    {
+      "properties": {
+        "mode": {
+          "const": "taint"
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    }
+  ]
+}

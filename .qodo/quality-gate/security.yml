@@ -21,6 +21,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8503
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches hashlib.md5/sha1 and hashlib.new with a literal algorithm name. Misses an
+        algorithm supplied via a variable, config value, or reflection, and cannot distinguish a
+        security use from a benign cache-key or ETag use.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -52,6 +59,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8501
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches an uppercase SECRET/TOKEN/CREDENTIAL identifier assigned a literal of 12+ chars.
+        Misses lowercase or unconventional names, values built by concatenation, credentials in
+        non-Python config files, and short high-value literals below the length floor.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -79,6 +93,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8506
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches concatenation, f-string, percent-format and .format() directly inside an
+        execute() call. Misses a query assembled into a variable on a prior line, built by a
+        helper function, or passed through an ORM raw-SQL wrapper.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -108,6 +129,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8502
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches pickle.loads, yaml.load with a single argument, and marshal.loads. Misses
+        aliased imports, yaml.load called with an explicit unsafe Loader keyword, and other
+        deserialisers such as dill, shelve or jsonpickle.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -136,6 +164,12 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8507
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches os.system and subprocess with shell=True. Misses os.popen, the os.exec family,
+        commands routed through a wrapper utility, and shell=True supplied via kwargs expansion.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -163,6 +197,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8504
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Matches requests with a literal verify=False and the private ssl unverified-context
+        helper. Misses the flag passed as a variable, a session-level assignment, and urllib3 or
+        httpx equivalents.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "action_required"
       cwe:
@@ -191,6 +232,13 @@ rules:
         - "**/*_test.py"
     metadata:
       qodo_rule_id: 8505
+      qodo_schema_version: 1
+      qodo_integration_mode: status_check
+      portability_tier: A
+      limitations: >-
+        Flags random.random/randint/choice unconditionally, so it fires on legitimate non-
+        security uses such as retry jitter or sampling. Does not resolve whether the value
+        reaches a security sink; triage accordingly.
       qodo_finding_source: "StaticAnalysisFinding"
       qodo_action_level: "remediation_recommended"
       cwe:
