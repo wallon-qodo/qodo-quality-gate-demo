@@ -35,15 +35,24 @@ jobs:
       # --error makes a finding a non-zero exit, which is what fails the check.
       # One invocation for the whole ruleset: batching is ~2.3x faster than
       # scanning per-rule.
+      # Ruling tests: every rule has pinned expected findings. Fails on drift in
+      # either direction -- a rule that stops catching a true positive, a safe
+      # fixture that starts firing, or a known gap that closes (baseline is then
+      # stale and must be refreshed deliberately).
+      - name: Ruling tests
+        run: python3 .qodo/ci/ruling.py .qodo/quality-gate/ .qodo/fixtures --baseline .qodo/ci/ruling-baseline.json
+
+      # --exclude: the fixtures are intentionally vulnerable; scanning them
+      # would make the repo permanently fail its own gate.
       - name: Scan
-        run: opengrep scan --config .qodo/quality-gate/ --error --quiet .
+        run: opengrep scan --config .qodo/quality-gate/ --exclude='.qodo/fixtures' --error --quiet .
 
       # Opengrep can silently drop matches in regions it fails to parse, while
       # still exiting 0. Fail loudly instead of reporting false confidence.
       - name: Parse-integrity check
         if: always()
         run: |
-          opengrep scan --config .qodo/quality-gate/ --json --quiet . > findings.json || true
+          opengrep scan --config .qodo/quality-gate/ --exclude='.qodo/fixtures' --json --quiet . > findings.json || true
           python3 - <<'EOF'
           import json, sys
           d = json.load(open("findings.json"))

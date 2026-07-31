@@ -1,0 +1,199 @@
+{
+  "SEC-CMDI-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "arg_list.py",
+        "no_shell.py",
+        "shell_word_in_string.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "os_system.py",
+        "subprocess_shell.py"
+      ],
+      "fired": [
+        "os_system.py",
+        "subprocess_shell.py"
+      ]
+    }
+  },
+  "SEC-CRYPTO-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "md5_in_comment.py",
+        "md5_in_string.py",
+        "pbkdf2_ok.py",
+        "sha256_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "md5_password.py",
+        "new_md5.py",
+        "new_sha1.py",
+        "sha1_signature.py"
+      ],
+      "fired": [
+        "md5_password.py",
+        "new_md5.py",
+        "new_sha1.py",
+        "sha1_signature.py"
+      ]
+    }
+  },
+  "SEC-DESER-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "json_ok.py",
+        "pickle_dumps_ok.py",
+        "yaml_safe.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "marshal_loads.py",
+        "pickle_loads.py",
+        "yaml_load.py"
+      ],
+      "fired": [
+        "marshal_loads.py",
+        "pickle_loads.py",
+        "yaml_load.py"
+      ]
+    }
+  },
+  "SEC-RANDOM-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "secrets_below.py",
+        "secrets_ok.py",
+        "sysrandom_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "session_id.py",
+        "token_random.py"
+      ],
+      "fired": [
+        "session_id.py",
+        "token_random.py"
+      ]
+    }
+  },
+  "SEC-SECRET-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "from_env.py",
+        "metric_name.py",
+        "placeholder.py",
+        "short_literal.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "api_token.py",
+        "client_secret.py",
+        "signing_key.py"
+      ],
+      "fired": [
+        "api_token.py",
+        "client_secret.py",
+        "signing_key.py"
+      ]
+    }
+  },
+  "SEC-SQLI-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "concat_not_sql.py",
+        "constant_query.py",
+        "named_params.py",
+        "parameterised.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "concat.py",
+        "format_call.py",
+        "fstring.py",
+        "percent.py"
+      ],
+      "fired": [
+        "concat.py",
+        "format_call.py",
+        "fstring.py",
+        "percent.py"
+      ]
+    }
+  },
+  "SEC-TLS-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "default_verify.py",
+        "explicit_ca.py",
+        "verify_true.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "requests_noverify.py",
+        "requests_post_noverify.py"
+      ],
+      "fired": [
+        "requests_noverify.py",
+        "requests_post_noverify.py"
+      ]
+    }
+  }
+}
