@@ -149,7 +149,11 @@
           "description": "Either a flat array of framework identifiers, or a mapping framework -> controls (controls may itself be a mapping keyed by standard version, e.g. PCI-DSS -> v4_0 -> [...]). Both accepted: the nested form carries version context and must not be flattened away."
         },
         "cluster": {
-          "type": "string"
+          "type": [
+            "string",
+            "object"
+          ],
+          "description": "Cluster identifier, or a structured record (map ids, member counts, corpora spanned). Both accepted -- the structured form is how the overlap analysis actually emits it."
         },
         "validated": {
           "type": "object",
