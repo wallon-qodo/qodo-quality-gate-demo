@@ -1,0 +1,246 @@
+{
+  "FTFY-TMPFILE-01": {
+    "sev": "ERROR",
+    "cwe": [
+      "CWE-377",
+      "CWE-379"
+    ],
+    "owasp": [
+      "A01:2021"
+    ],
+    "fortify": "fortify-insecure-temporary-file",
+    "kingdom": "Code Quality",
+    "msg": "predictable temporary file path or deprecated mktemp",
+    "pats": [
+      {
+        "pattern-either": [
+          {
+            "pattern": "tempfile.mktemp(...)"
+          },
+          {
+            "pattern-regex": "open\\(\\s*[\"']/(tmp|var/tmp|dev/shm)/"
+          },
+          {
+            "pattern-regex": "[\"']/(tmp|var/tmp|dev/shm)/[^\"']*[\"']\\s*\\+"
+          }
+        ]
+      }
+    ],
+    "lim": "Flags tempfile.mktemp and literal paths under /tmp, /var/tmp and /dev/shm. Misses a predictable path assembled from a variable, read from configuration, or produced by os.path.join, and does not evaluate whether the directory is actually world-writable."
+  },
+  "FTFY-FILEPERM-01": {
+    "sev": "ERROR",
+    "cwe": [
+      "CWE-732"
+    ],
+    "owasp": [
+      "A01:2021"
+    ],
+    "fortify": "fortify-file-permission-manipulation",
+    "kingdom": "Security Features",
+    "msg": "world-writable permission bits or a cleared umask",
+    "pats": [
+      {
+        "pattern-either": [
+          {
+            "pattern": "os.chmod($P, 0o777)"
+          },
+          {
+            "pattern": "os.chmod($P, 0o666)"
+          },
+          {
+            "pattern": "os.chmod($P, 0o776)"
+          },
+          {
+            "pattern": "os.chmod($P, 511)"
+          },
+          {
+            "pattern": "os.umask(0)"
+          },
+          {
+            "pattern": "os.fchmod($F, 0o777)"
+          }
+        ]
+      }
+    ],
+    "lim": "Matches literal world-writable octal modes and a zero umask. Misses a mode computed at runtime, passed through a variable or constant, or applied via subprocess chmod, and does not reason about the file's sensitivity."
+  },
+  "FTFY-LOGSENS-01": {
+    "sev": "WARNING",
+    "cwe": [
+      "CWE-532",
+      "CWE-359"
+    ],
+    "owasp": [
+      "A09:2021"
+    ],
+    "fortify": "fortify-poor-logging-practice",
+    "kingdom": "Encapsulation",
+    "msg": "sensitive value interpolated into a log record",
+    "pats": [
+      {
+        "patterns": [
+          {
+            "pattern-either": [
+              {
+                "pattern": "$LOG.$LVL(f\"...\", ...)"
+              },
+              {
+                "pattern": "$LOG.$LVL(\"...\" % ..., ...)"
+              },
+              {
+                "pattern": "$LOG.$LVL(\"...\".format(...), ...)"
+              },
+              {
+                "pattern": "$LOG.$LVL(\"...\" + ..., ...)"
+              }
+            ]
+          },
+          {
+            "metavariable-regex": {
+              "metavariable": "$LVL",
+              "regex": "^(debug|info|warning|warn|error|critical|exception|log)$"
+            }
+          },
+          {
+            "pattern-regex": "(?i)\\b(password|passwd|pwd|secret|token|api[_-]?key|ssn|card[_-]?number|cvv|auth[_-]?header)\\b"
+          }
+        ]
+      }
+    ],
+    "lim": "Requires the sensitive name to appear in the same log statement as an interpolation. Misses a sensitive value carried in a neutrally-named variable, an object whose repr leaks fields, and structured-logging extra= dictionaries. Will fire on a log line that merely mentions the word."
+  },
+  "FTFY-DJANGO-01": {
+    "sev": "ERROR",
+    "cwe": [
+      "CWE-489",
+      "CWE-16"
+    ],
+    "owasp": [
+      "A05:2021"
+    ],
+    "fortify": "fortify-django-bad-practices",
+    "kingdom": "Environment",
+    "msg": "Django setting unsafe for production",
+    "pats": [
+      {
+        "pattern-either": [
+          {
+            "pattern": "DEBUG = True"
+          },
+          {
+            "pattern": "ALLOWED_HOSTS = [\"*\"]"
+          },
+          {
+            "pattern": "ALLOWED_HOSTS = ['*']"
+          },
+          {
+            "pattern": "CSRF_COOKIE_SECURE = False"
+          },
+          {
+            "pattern": "SESSION_COOKIE_SECURE = False"
+          },
+          {
+            "pattern": "SECURE_SSL_REDIRECT = False"
+          }
+        ]
+      }
+    ],
+    "lim": "Matches literal assignments only. Misses a value read from the environment that still resolves unsafely at runtime, settings layered by an imported override module, and per-environment settings files the scan does not reach."
+  },
+  "FTFY-PKGLOAD-01": {
+    "sev": "ERROR",
+    "cwe": [
+      "CWE-426",
+      "CWE-427"
+    ],
+    "owasp": [
+      "A08:2021"
+    ],
+    "fortify": "fortify-unsafe-package-loading",
+    "kingdom": "API Abuse",
+    "msg": "module search path or dynamic import driven by a non-literal",
+    "pats": [
+      {
+        "pattern-either": [
+          {
+            "patterns": [
+              {
+                "pattern": "sys.path.insert($I, $X)"
+              },
+              {
+                "pattern-not": "sys.path.insert($I, \"...\")"
+              }
+            ]
+          },
+          {
+            "patterns": [
+              {
+                "pattern": "sys.path.append($X)"
+              },
+              {
+                "pattern-not": "sys.path.append(\"...\")"
+              }
+            ]
+          },
+          {
+            "patterns": [
+              {
+                "pattern": "__import__($X)"
+              },
+              {
+                "pattern-not": "__import__(\"...\")"
+              }
+            ]
+          },
+          {
+            "patterns": [
+              {
+                "pattern": "importlib.import_module($X)"
+              },
+              {
+                "pattern-not": "importlib.import_module(\"...\")"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "lim": "Flags a non-literal argument without proving it is attacker-controlled, so a path derived from a trusted constant or __file__ still fires. Misses site-packages manipulation via PYTHONPATH, .pth files, and importlib loaders constructed indirectly."
+  },
+  "FTFY-BOTO3-01": {
+    "sev": "ERROR",
+    "cwe": [
+      "CWE-732",
+      "CWE-284"
+    ],
+    "owasp": [
+      "A01:2021"
+    ],
+    "fortify": "fortify-aws-boto3-misconfiguration",
+    "kingdom": "Environment",
+    "msg": "AWS resource granted public access",
+    "pats": [
+      {
+        "pattern-either": [
+          {
+            "pattern": "$C.put_bucket_acl(..., ACL=\"public-read\", ...)"
+          },
+          {
+            "pattern": "$C.put_bucket_acl(..., ACL=\"public-read-write\", ...)"
+          },
+          {
+            "pattern": "$C.put_object(..., ACL=\"public-read\", ...)"
+          },
+          {
+            "pattern": "$C.put_object(..., ACL=\"public-read-write\", ...)"
+          },
+          {
+            "pattern": "$C.create_bucket(..., ACL=\"public-read\", ...)"
+          }
+        ]
+      }
+    ],
+    "lim": "Matches a literal public ACL keyword on common boto3 calls. Misses ACLs set through a bucket-policy document, IAM policy with a wildcard principal, CloudFormation or Terraform definitions, and an ACL value passed via a variable or kwargs expansion."
+  }
+}

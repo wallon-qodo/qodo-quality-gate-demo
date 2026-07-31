@@ -1,0 +1,239 @@
+# Fortify wave 1 -- 6 rules ported from ~/fortify-rules (qodo-fortify-rules).
+# Chosen for: Tier A (AST-expressible), Python, and NO overlap with the
+# existing SEC-* set. Engine: Opengrep (LGPL-2.1). See NOTICE.
+rules:
+  - id: "FTFY-TMPFILE-01"
+    message: "FTFY-TMPFILE-01 (CWE-377, CWE-379): predictable temporary file path or deprecated mktemp"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "action_required"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Flags tempfile.mktemp and literal paths under /tmp, /var/tmp and /dev/shm. Misses a predictable path assembled from a variable, read from configuration, or produced by os.path.join, and does not evaluate whether the directory is actually world-writable."
+      cwe:
+        - "CWE-377"
+        - "CWE-379"
+      owasp:
+        - "A01:2021"
+      frameworks:
+        Fortify:
+          - "fortify-insecure-temporary-file"
+        kingdom:
+          - "Code Quality"
+      source_corpus: "qodo-fortify-rules"
+    patterns:
+      - pattern-either:
+          - pattern: "tempfile.mktemp(...)"
+          - pattern-regex: "open\\(\\s*[\"']/(tmp|var/tmp|dev/shm)/"
+          - pattern-regex: "[\"']/(tmp|var/tmp|dev/shm)/[^\"']*[\"']\\s*\\+"
+  - id: "FTFY-FILEPERM-01"
+    message: "FTFY-FILEPERM-01 (CWE-732): world-writable permission bits or a cleared umask"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "action_required"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Matches literal world-writable octal modes and a zero umask. Misses a mode computed at runtime, passed through a variable or constant, or applied via subprocess chmod, and does not reason about the file's sensitivity."
+      cwe:
+        - "CWE-732"
+      owasp:
+        - "A01:2021"
+      frameworks:
+        Fortify:
+          - "fortify-file-permission-manipulation"
+        kingdom:
+          - "Security Features"
+      source_corpus: "qodo-fortify-rules"
+    patterns:
+      - pattern-either:
+          - pattern: "os.chmod($P, 0o777)"
+          - pattern: "os.chmod($P, 0o666)"
+          - pattern: "os.chmod($P, 0o776)"
+          - pattern: "os.chmod($P, 511)"
+          - pattern: "os.umask(0)"
+          - pattern: "os.fchmod($F, 0o777)"
+  - id: "FTFY-LOGSENS-01"
+    message: "FTFY-LOGSENS-01 (CWE-532, CWE-359): sensitive value interpolated into a log record"
+    severity: "WARNING"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: "$LOG.$LVL(f\"...\", ...)"
+              - metavariable-regex:
+                  metavariable: "$LVL"
+                  regex: "^(debug|info|warning|warn|error|critical|exception|log)$"
+              - pattern-regex: "\\{[^{}]*\\b(?:password|passwd|pwd|secret|token|api[_-]?key|ssn|card[_-]?number|cvv)\\b[^{}]*\\}"
+          - patterns:
+              - pattern-either:
+                  - pattern: "$LOG.$LVL(\"...\" % $ARG, ...)"
+                  - pattern: "$LOG.$LVL(\"...\" % (..., $ARG, ...), ...)"
+                  - pattern: "$LOG.$LVL(\"...\".format(..., $ARG, ...), ...)"
+                  - pattern: "$LOG.$LVL(\"...\" + $ARG, ...)"
+              - metavariable-regex:
+                  metavariable: "$LVL"
+                  regex: "^(debug|info|warning|warn|error|critical|exception|log)$"
+              - metavariable-regex:
+                  metavariable: "$ARG"
+                  regex: "(?i)\\b(?:password|passwd|pwd|secret|token|api[_-]?key|ssn|card[_-]?number|cvv)\\b"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "remediation_recommended"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Requires the sensitive name to appear inside an f-string interpolation, or to be the name of the interpolated argument. A log line that merely mentions the word in literal text \u2014 including the redacted form \u2014 is correctly ignored. Misses a sensitive value carried in a neutrally-named variable, an object whose repr leaks fields, and structured-logging extra= dictionaries."
+      cwe:
+        - "CWE-532"
+        - "CWE-359"
+      owasp:
+        - "A09:2021"
+      frameworks:
+        Fortify:
+          - "fortify-poor-logging-practice"
+        kingdom:
+          - "Encapsulation"
+      source_corpus: "qodo-fortify-rules"
+  - id: "FTFY-DJANGO-01"
+    message: "FTFY-DJANGO-01 (CWE-489, CWE-16): Django setting unsafe for production"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "action_required"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Matches literal assignments only. Misses a value read from the environment that still resolves unsafely at runtime, settings layered by an imported override module, and per-environment settings files the scan does not reach."
+      cwe:
+        - "CWE-489"
+        - "CWE-16"
+      owasp:
+        - "A05:2021"
+      frameworks:
+        Fortify:
+          - "fortify-django-bad-practices"
+        kingdom:
+          - "Environment"
+      source_corpus: "qodo-fortify-rules"
+    patterns:
+      - pattern-either:
+          - pattern: "DEBUG = True"
+          - pattern: "ALLOWED_HOSTS = [\"*\"]"
+          - pattern: "ALLOWED_HOSTS = ['*']"
+          - pattern: "CSRF_COOKIE_SECURE = False"
+          - pattern: "SESSION_COOKIE_SECURE = False"
+          - pattern: "SECURE_SSL_REDIRECT = False"
+  - id: "FTFY-PKGLOAD-01"
+    message: "FTFY-PKGLOAD-01 (CWE-426, CWE-427): module search path or dynamic import driven by a non-literal"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "action_required"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Flags a non-literal argument without proving it is attacker-controlled, so a path derived from a trusted constant or __file__ still fires. Misses site-packages manipulation via PYTHONPATH, .pth files, and importlib loaders constructed indirectly."
+      cwe:
+        - "CWE-426"
+        - "CWE-427"
+      owasp:
+        - "A08:2021"
+      frameworks:
+        Fortify:
+          - "fortify-unsafe-package-loading"
+        kingdom:
+          - "API Abuse"
+      source_corpus: "qodo-fortify-rules"
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: "sys.path.insert($I, $X)"
+              - pattern-not: "sys.path.insert($I, \"...\")"
+          - patterns:
+              - pattern: "sys.path.append($X)"
+              - pattern-not: "sys.path.append(\"...\")"
+          - patterns:
+              - pattern: "__import__($X)"
+              - pattern-not: "__import__(\"...\")"
+          - patterns:
+              - pattern: "importlib.import_module($X)"
+              - pattern-not: "importlib.import_module(\"...\")"
+  - id: "FTFY-BOTO3-01"
+    message: "FTFY-BOTO3-01 (CWE-732, CWE-284): AWS resource granted public access"
+    severity: "ERROR"
+    languages:
+      - "python"
+    paths:
+      exclude:
+        - "tests/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+    metadata:
+      qodo_schema_version: 1
+      qodo_integration_mode: "status_check"
+      qodo_action_level: "action_required"
+      version: "1.0.0"
+      portability_tier: "A"
+      confidence: "HIGH"
+      limitations: "Matches a literal public ACL keyword on common boto3 calls. Misses ACLs set through a bucket-policy document, IAM policy with a wildcard principal, CloudFormation or Terraform definitions, and an ACL value passed via a variable or kwargs expansion."
+      cwe:
+        - "CWE-732"
+        - "CWE-284"
+      owasp:
+        - "A01:2021"
+      frameworks:
+        Fortify:
+          - "fortify-aws-boto3-misconfiguration"
+        kingdom:
+          - "Environment"
+      source_corpus: "qodo-fortify-rules"
+    patterns:
+      - pattern-either:
+          - pattern: "$C.put_bucket_acl(..., ACL=\"public-read\", ...)"
+          - pattern: "$C.put_bucket_acl(..., ACL=\"public-read-write\", ...)"
+          - pattern: "$C.put_object(..., ACL=\"public-read\", ...)"
+          - pattern: "$C.put_object(..., ACL=\"public-read-write\", ...)"
+          - pattern: "$C.create_bucket(..., ACL=\"public-read\", ...)"

@@ -1,4 +1,171 @@
 {
+  "FTFY-BOTO3-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "acl_in_string.py",
+        "acl_private_ok.py",
+        "no_acl_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "bucket_acl_public.py",
+        "object_acl_public_rw.py"
+      ],
+      "fired": [
+        "bucket_acl_public.py",
+        "object_acl_public_rw.py"
+      ]
+    }
+  },
+  "FTFY-DJANGO-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "allowed_hosts_explicit.py",
+        "cookies_secure_ok.py",
+        "debug_from_env.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "allowed_hosts_wildcard.py",
+        "csrf_insecure.py",
+        "debug_true.py"
+      ],
+      "fired": [
+        "allowed_hosts_wildcard.py",
+        "csrf_insecure.py",
+        "debug_true.py"
+      ]
+    }
+  },
+  "FTFY-FILEPERM-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "chmod_600_ok.py",
+        "chmod_755_ok.py",
+        "mode_in_comment.py",
+        "umask_077_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "chmod_666.py",
+        "chmod_777.py",
+        "umask_zero.py"
+      ],
+      "fired": [
+        "chmod_666.py",
+        "chmod_777.py",
+        "umask_zero.py"
+      ]
+    }
+  },
+  "FTFY-LOGSENS-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "no_sensitive_ok.py",
+        "redacted_ok.py",
+        "static_message_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "concat_apikey.py",
+        "fstring_password.py",
+        "percent_token.py"
+      ],
+      "fired": [
+        "concat_apikey.py",
+        "fstring_password.py",
+        "percent_token.py"
+      ]
+    }
+  },
+  "FTFY-PKGLOAD-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "import_literal.py",
+        "path_insert_literal.py",
+        "static_import.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "dynamic_import.py",
+        "path_append_var.py",
+        "path_insert_var.py"
+      ],
+      "fired": [
+        "dynamic_import.py",
+        "path_append_var.py",
+        "path_insert_var.py"
+      ]
+    }
+  },
+  "FTFY-TMPFILE-01": {
+    "errors": [],
+    "evasion": {
+      "files": [],
+      "fired": []
+    },
+    "known_gaps": [],
+    "safe": {
+      "files": [
+        "mkstemp_ok.py",
+        "tmp_in_docstring.py",
+        "tmpdir_ctx_ok.py"
+      ],
+      "fired": []
+    },
+    "vulnerable": {
+      "files": [
+        "concat_var_tmp.py",
+        "literal_tmp_open.py",
+        "mktemp_deprecated.py"
+      ],
+      "fired": [
+        "concat_var_tmp.py",
+        "literal_tmp_open.py",
+        "mktemp_deprecated.py"
+      ]
+    }
+  },
   "SEC-CMDI-01": {
     "errors": [],
     "evasion": {
