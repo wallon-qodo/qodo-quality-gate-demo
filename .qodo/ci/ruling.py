@@ -16,13 +16,21 @@ Three drift classes, all failures:
   ruling.py <rules-dir> <fixtures-dir> --baseline b.json [--update]
 """
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import yaml
 
-OPENGREP = "/Users/wallonwalusayi/.local/bin/opengrep"
+# resolve in order: explicit env, PATH, then the usual local install spots.
+# A hardcoded absolute path broke CI -- it was my macOS path.
+OPENGREP = (os.environ.get("OPENGREP_BIN")
+            or shutil.which("opengrep")
+            or next((p for p in ("/usr/local/bin/opengrep",
+                                 str(Path.home() / ".local/bin/opengrep"))
+                     if Path(p).exists()), "opengrep"))
 BUCKETS = ("vulnerable", "safe", "evasion")
 
 
