@@ -295,6 +295,15 @@ def apply_once(repo: str, pr: str, engine, cache: str, tmp: str,
     if not done:
         # The model was unreachable. Qodo's own wording is still correct -- leave it.
         return "no-headlines"
+
+    # Translation can take long enough for Qodo to refresh this comment. Do not
+    # PATCH a whole stale body: that would restore the old review and lose its
+    # newly posted findings. Re-read immediately before writing and retry on the
+    # next watch iteration if the comment changed (or was replaced).
+    current = find_review_comment(repo, pr)
+    if (not current or current.get("id") != review.get("id") or
+            (current.get("body") or "") != body):
+        return "failed"
     return "applied" if patch_comment(repo, int(review["id"]), new, tmp) else "failed"
 
 
