@@ -1,0 +1,74 @@
+name: plain-english-headlines
+
+on:
+  pull_request:
+    branches: [main]
+
+# Least privilege. Reading the code is only needed to get the script itself; the
+# one write is the edit of the review comment. Verified sufficient on this repo:
+# pull-requests: write covers PATCH of a pull request's issue comment.
+permissions:
+  contents: read
+  pull-requests: write
+
+# Deliberately a SEPARATE workflow from quality-gate.yml. That job name is wired
+# into branch protection as a required check; this one only rewrites the wording
+# of a comment and must never be able to fail a merge.
+jobs:
+  headlines:
+    name: Plain English Headlines
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a commit SHA -- a moved tag would otherwise change what runs
+      # here with no change to this file.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The wording comes from the plain-english-findings engine, which is NOT
+      # vendored into this repo on purpose: one copy of the prompt contract is
+      # the point, and a second copy drifts from the one the reports use. The
+      # runner is expected to provide it -- checkout, submodule, or a private
+      # package -- at PLAIN_ENGLISH_DIR. With no engine and no key the job says
+      # so and exits clean, leaving Qodo's own headlines in place.
+      - name: Check whether the translation engine is available here
+        id: engine
+        env:
+          PLAIN_ENGLISH_DIR: ${{ vars.PLAIN_ENGLISH_DIR }}
+        run: |
+          dir="${PLAIN_ENGLISH_DIR:-.qodo/ci/plain-english}"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          if [ -f "$dir/engine.py" ] && [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "No engine at $dir (or no ANTHROPIC_API_KEY) -- \
+          leaving the review as Qodo wrote it." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install the model CLI
+        if: steps.engine.outputs.ready == 'yes'
+        run: npm install -g @anthropic-ai/claude-code
+
+      # Rewrites the lead line of every finding in Qodo's own review comment and
+      # adds a consequence-first block under it, keeping the engine's title and
+      # every one of its blocks. Then watches, because Qodo rewrites that comment
+      # on every re-review and the rewrite reverts with it.
+      - name: Rewrite the findings comment headlines
+        if: steps.engine.outputs.ready == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 .qodo/ci/headline_rewrite.py \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --engine-dir "${{ steps.engine.outputs.dir }}" \
+            --cache headline-cache.json \
+            --wait 300 --watch 600 --stable 180
+
+      - name: Upload the headline cache
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: plain-english-headlines
+          path: headline-cache.json
+          if-no-files-found: ignore
